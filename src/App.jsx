@@ -182,7 +182,7 @@ function OrdersPage() {
 
   useEffect(() => {
     async function fetchOrders() {
-      const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false })
+      const { data } = await supabase.from('orders').select('*').order('id', { ascending: false })
       setOrders(data || [])
       setLoading(false)
     }
