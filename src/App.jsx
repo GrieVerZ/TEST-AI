@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
+import { supabase } from './supabase'
 
 const stats = [
   { label: 'Total Revenue', value: '$45,231', change: '+20.1%', up: true },
@@ -176,8 +177,20 @@ function AnalyticsPage() {
 
 function OrdersPage() {
   const [filter, setFilter] = useState('All')
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchOrders() {
+      const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false })
+      setOrders(data || [])
+      setLoading(false)
+    }
+    fetchOrders()
+  }, [])
+
   const statuses = ['All', 'Completed', 'Pending', 'Cancelled']
-  const filtered = filter === 'All' ? recentOrders : recentOrders.filter(o => o.status === filter)
+  const filtered = filter === 'All' ? orders : orders.filter(o => o.status === filter)
 
   return (
     <>
@@ -212,19 +225,22 @@ function OrdersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((order) => (
-                <tr key={order.id} className="border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                  <td className="px-5 py-3 font-medium text-gray-800 dark:text-white">{order.id}</td>
-                  <td className="px-5 py-3">
-                    <p className="text-gray-800 dark:text-gray-200">{order.customer}</p>
-                    <p className="text-gray-400 dark:text-gray-500 text-xs">{order.email}</p>
-                  </td>
-                  <td className="px-5 py-3 text-gray-800 dark:text-gray-200">{order.amount}</td>
-                  <td className="px-5 py-3"><StatusBadge status={order.status} /></td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
+              {loading ? (
+                <tr><td colSpan={4} className="px-5 py-8 text-center text-gray-400 dark:text-gray-500">Loading...</td></tr>
+              ) : filtered.length === 0 ? (
                 <tr><td colSpan={4} className="px-5 py-8 text-center text-gray-400 dark:text-gray-500">No orders found.</td></tr>
+              ) : (
+                filtered.map((order) => (
+                  <tr key={order.id} className="border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <td className="px-5 py-3 font-medium text-gray-800 dark:text-white">#{order.id}</td>
+                    <td className="px-5 py-3">
+                      <p className="text-gray-800 dark:text-gray-200">{order.customer}</p>
+                      <p className="text-gray-400 dark:text-gray-500 text-xs">{order.email}</p>
+                    </td>
+                    <td className="px-5 py-3 text-gray-800 dark:text-gray-200">{order.amount}</td>
+                    <td className="px-5 py-3"><StatusBadge status={order.status} /></td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
